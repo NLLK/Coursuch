@@ -12,7 +12,7 @@ int numberOfTalons=0;
 //int windows[5]={0,0,0,0,0};
 int windows[5]={0,0,0,0,0};
 //int seats[10]={0,0,0,0,0,0,0,0,0,0};
-int seats[10]={1,0,0,0,0,0,0,0,0,0};
+int seats[10]={0,0,0,0,0,0,0,0,0,0};
 int fieldWidth=66;//ширина, 36+5*width =>36,41,46...
 int fieldHeight=25;//высота
 
@@ -111,20 +111,25 @@ int GetTimeForOperation(int op)
 {//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
 	return (op==0)? 3: 5 ;
 }
-void ChangeWindowTime(void* arg)
+void* ChangeWindowTime(void* arg)
 {
 	int* send = (int*)arg;
 	int window=send[0];
 	int operation=send[1];
+	int talon = send[2];
+	char* tal=malloc(sizeof(char)*3);
+	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
+
 	int width=2+(fieldWidth-6)/5;//ширина окна
 	int time = GetTimeForOperation(operation);
+	PrintInPoint((window-1)*(width-1)+9,3,tal);
 	for (char t='0'; t<='0'+time; t++)
 	{
-		//count*(width-1)+2, 4, "Vremya:");
 		PrintInPoint((window-1)*(width-1)+10,4,&t);
 		usleep(1000000);//секунду спит
 	}
 	PrintInPoint((window-1)*(width-1)+10,4," ");
+	PrintInPoint((window-1)*(width-1)+9,3, "  ");
 }
 void DrawTalonMachine()
 {//рисовать автомат по выдаче талонов
@@ -177,7 +182,6 @@ void ClearRow(int talon)
 }
 void DrawField()
 {//рисовать поле
-	//сделать в потоках
 	ChangeColor(COLOR_Green);
 	DrawFieldBorder();
 	DrawWindowsState();
@@ -219,13 +223,13 @@ void GetSeat()
 		if (seats[i] == 0)
 		{
 			freeSeat = i+1;
-			break;
+			return;
 		}
 	}	
 }
 void SetSeat()
 {
-	seats[freeSeat]=1;
+	seats[freeSeat-1]=1;
 }
 void FreeASeat(int seat)
 {
@@ -272,27 +276,35 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 	}
 	PrintInPoint(x2,y2,name);
 }
-int* CreateArray(int a, int b)
+int* CreateArray(int a, int b, int c)
 {
-	int *send = malloc(sizeof(int)*2);
-	send[0]=a;	send[1]=b;
+	int *send = malloc(sizeof(int)*3);
+	send[0]=a;	send[1]=b;	send[2]=c;
 	return send;
 }
-void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* semWrite, int* N, void* reader)
-{
+void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* semWrite, int* N, void* reader, int mode)
+{	//абстрактный читатель. 
+	//mode - нужно ли выходить при получении значения или ждать, пока значение не станет не равным нулю(исключительно для окон)
 	void (*program)() = reader;
 	bool ex = false;
 	do
 	{
 		pthread_mutex_lock(mtxRead);
 		*N+=1;
-		PrintInPoint(90,*N,"pizda");
 		if (*N==1)
 		{
-			sem_wait(semRead);
-			pthread_mutex_lock(mtxWrite);	
-			program();//функция
-			ex=true;
+			int rc=-1;
+			//sem_wait(semRead);
+			//pthread_mutex_lock(mtxWrite);	
+			do{
+				rc = pthread_mutex_trylock(mtxWrite);
+				if(rc==0)
+				{
+					program();//функция
+					if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
+					else ex=true;
+				}
+			} while(rc!=0);
 		}
 		*N-=1;
 		if (*N==0)
@@ -300,8 +312,9 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* semWrite
 			pthread_mutex_unlock(mtxWrite);
 		}
 		pthread_mutex_unlock(mtxRead);
-
-		sem_post(semWrite);
+		int value;
+		sem_getvalue(semWrite,&value);
+		if (value==0)	sem_post(semWrite);
 	}while (ex == false);
 }
 void AbstractWriter(void* mtxWrite, void* semRead, void* semWrite, void* writer)
@@ -317,7 +330,7 @@ void AbstractWriter(void* mtxWrite, void* semRead, void* semWrite, void* writer)
 		{
 			program();//функция
 			ex=true;
-			sem_post(semRead);
+			//sem_post(semRead);
 			pthread_mutex_unlock(mtxWrite);
 		}
 	}while (ex==false);
@@ -341,8 +354,7 @@ void* visitor(void *arg)
 
 	int window = 0;
 
-	AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &semWinWrite, &WinN, &GetWindow);//определили свободное окно
-
+	AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &semWinWrite, &WinN, &GetWindow,0);//определили свободное окно
 	window=freeWindow;//запомнили
 	AbstractWriter(&mtxWinWrite, &semWinRead, &semWinWrite, &SetWindow);//записали его как занятое
 
@@ -354,7 +366,7 @@ void* visitor(void *arg)
 	if (window==0) //если окон свободных нет - сесть посидеть и ждать пока освободится окно
 	{
 		//определить свободное место
-		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &semSeatWrite, &SeatN, &GetSeat);
+		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &semSeatWrite, &SeatN, &GetSeat,0);
 		seat = freeSeat;
 		AbstractWriter(&mtxSeatWrite, &semSeatRead, &semSeatWrite, &SetSeat);
 		int x,y;
@@ -373,13 +385,11 @@ void* visitor(void *arg)
 		hereX=x; hereY=y;//теперь мы тут, на сиденьях
 
 		//ждем, пока окно не освободится
-		do{
-			AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &semSeatWrite, &SeatN, &GetSeat);
-			window=freeWindow;
-		}while(window==0);//ждать пока появится свободное окно 
+		AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &semWinWrite, &WinN, &GetWindow,1);
+		window=freeWindow;
+		AbstractWriter(&mtxWinWrite, &semWinRead, &semWinWrite, &SetWindow);//записали его как занятое
+		FreeASeat(seat);//освободить сидушку
 		WriteInTable(name,talon,operation,window);//записали все это в таблицу посетителей
-		FreeASeat(seat);
-		//освободить сидушку
 	}
 	//если есть свободные окна - идти в него
 	int width = 1+(fieldWidth-6)/5;
@@ -390,7 +400,7 @@ void* visitor(void *arg)
 
 	//запуск нити для изменения времени
 	pthread_t id;
-	int *send = CreateArray(window,operation);//создаем массив из окна и операции, чтобы передать это в поток
+	int *send = CreateArray(window,operation,talon);//создаем массив из окна и операции, чтобы передать это в поток
 	pthread_create(&id, NULL, (void*)ChangeWindowTime, (void*)send);
 	usleep(GetTimeForOperation(operation)*1000000);//спим столько же, сколько и меняется время в окне
 	FreeAWindow(window);//освобождаем окно
@@ -425,5 +435,4 @@ void main()
 		usleep(2000000);
 	}
 	getchar();
-	//PrintInPoint(1,35," ");//для отладки, потом убрать
 }
