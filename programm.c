@@ -9,8 +9,8 @@
 #define COLOR_White 37
 #define COLOR_Crimson 35
 int numberOfTalons=0;
-//int windows[5]={0,0,0,0,0};
-int windows[5]={0,0,0,0,0};
+int windows[5]={0,0,0,0,1};
+//int windows[5]={0,1,1,1,1};
 //int seats[10]={0,0,0,0,0,0,0,0,0,0};
 int seats[10]={0,0,0,0,0,0,0,0,0,0};
 int fieldWidth=66;//ширина, 36+5*width =>36,41,46...
@@ -283,39 +283,38 @@ int* CreateArray(int a, int b, int c)
 	return send;
 }
 void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* semWrite, int* N, void* reader, int mode)
-{	//абстрактный читатель. 
-	//mode - нужно ли выходить при получении значения или ждать, пока значение не станет не равным нулю(исключительно для окон)
+{
 	void (*program)() = reader;
 	bool ex = false;
-	do
-	{
-		pthread_mutex_lock(mtxRead);
-		*N+=1;
-		if (*N==1)
+	sem_wait(semRead);
+	do{
+		int rc = pthread_mutex_trylock(mtxRead);
+		if (rc == 0)
 		{
-			int rc=-1;
-			//sem_wait(semRead);
-			//pthread_mutex_lock(mtxWrite);	
-			do{
-				rc = pthread_mutex_trylock(mtxWrite);
-				if(rc==0)
-				{
-					program();//функция
-					if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
-					else ex=true;
-				}
-			} while(rc!=0);
-		}
-		*N-=1;
-		if (*N==0)
-		{
+			pthread_mutex_lock(mtxWrite);
+			*N+=1;
+			program();
+
+			for(int i=0;i<5;i++)
+			{	
+				char* a= malloc(sizeof(char));
+				a[0]=windows[i]+'0';
+				PrintInPoint(90,i+1,a);
+			}
+			for(int i=0;i<5;i++)
+			{	
+				char* a= malloc(sizeof(char));
+				a[0]=seats[i]+'0';
+				PrintInPoint(90,i+10,a);
+			}
 			pthread_mutex_unlock(mtxWrite);
+			pthread_mutex_unlock(mtxRead);
+			sem_post(semRead);
+			if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
+			else ex=true;
 		}
-		pthread_mutex_unlock(mtxRead);
-		int value;
-		sem_getvalue(semWrite,&value);
-		if (value==0)	sem_post(semWrite);
-	}while (ex == false);
+	}
+	while (ex == false);
 }
 void AbstractWriter(void* mtxWrite, void* semRead, void* semWrite, void* writer)
 {
@@ -323,7 +322,7 @@ void AbstractWriter(void* mtxWrite, void* semRead, void* semWrite, void* writer)
 	bool ex = false;
 	do
 	{
-		sem_wait(semWrite);
+		//sem_wait(semWrite);
 		int rc=-1;
 		rc = pthread_mutex_trylock(mtxWrite);
 		if (rc==0)
@@ -378,7 +377,7 @@ void* visitor(void *arg)
 		else if (seat<=8)
 		{
 			x=fieldWidth-2;
-			y=11+1+(seat-4)*3;
+			y=11+1+(seat-5)*3;
 		}
 		//определили где сесть
 		GoFromTo(name,hereX,hereY,x,y,0);
@@ -429,7 +428,7 @@ void main()
 	printf("\033[H\033[2J");//clear screen
 	DrawField();
 	MutexsSemsInit();
-	for (char name='A';name<='A'+10; name++)
+	for (char name='A';name<'A'+20; name++)
 	{
 		int rc=	pthread_create(&tid[name-'A'],NULL, (void*)visitor, (void*)name);
 		usleep(2000000);
