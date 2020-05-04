@@ -385,6 +385,15 @@ void MutexsSemsInit()
 	sem_init(&semSeatRead, 1, 1);//семфор для чтения сидений
 	sem_post(&semSeatRead);//инициализируем семафор единицей
 }
+void MutexsSemsDestroy()
+{
+	pthread_mutex_destroy(&mtxWinRead);
+	pthread_mutex_destroy(&mtxWinWrite);
+	pthread_mutex_destroy(&mtxSeatWrite);
+	pthread_mutex_destroy(&mtxSeatRead);
+	sem_destroy(&semWinRead);
+	sem_destroy(&semSeatRead);
+}
 void main()
 {//главная функция
 	printf("\033[H\033[2J");//очищаем окно
@@ -396,4 +405,5 @@ void main()
 		usleep(2000000);//дополнительно немного ждем
 	}
 	getchar();//ждем, пока будет нажата клавиша или ctrl+c
+	MutexsSemsDestroy();
 }
