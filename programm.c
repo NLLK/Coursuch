@@ -36,31 +36,29 @@ void DrawBorder(int x1, int y1, int x2, int y2)
 	//x,y ╔══╗ X,y
 	//	  ║  ║
 	//x,Y ╚══╝ X,Y
-	PrintInPoint(x1,y1,"╔");//угол 1
-	PrintInPoint(x2,y1,"╗");//угол 2
-	PrintInPoint(x1,y2,"╚");//угол 3
-	PrintInPoint(x2,y2,"╝");//угол 4
+	ChangeColor(COLOR_Green); PrintInPoint(x1,y1,"╔");//угол 1
+	ChangeColor(COLOR_Green); PrintInPoint(x2,y1,"╗");//угол 2
+	ChangeColor(COLOR_Green); PrintInPoint(x1,y2,"╚");//угол 3
+	ChangeColor(COLOR_Green); PrintInPoint(x2,y2,"╝");//угол 4
 	if ((x2-x1 != 1) && (y2 - y1 != 1))//в случае, если это квадрат 1*1 то все уже было выведено
 	{
 	for (int x=x1+1;x<=x2-1;x++)//верхняя и нижняя границы
 	{
-		PrintInPoint(x,y1,"═"); 
-		PrintInPoint(x,y2,"═");
+		ChangeColor(COLOR_Green);	PrintInPoint(x,y1,"═"); 
+		ChangeColor(COLOR_Green);	PrintInPoint(x,y2,"═");
 	}
 	
 	for(int y=y1+1; y<=y2-1;y++)//правая и левая границы
 	{
-		PrintInPoint(x1, y,"║");
-		PrintInPoint(x2, y,"║");
+		ChangeColor(COLOR_Green);	PrintInPoint(x1, y,"║");
+		ChangeColor(COLOR_Green);	PrintInPoint(x2, y,"║");
 	}
 	}
 }
 void DrawFieldBorder()
 {//рисовать рамку поля - здания
-	ChangeColor(COLOR_Green);
-	DrawBorder(1,1,fieldWidth,fieldHeight);//рамка поля - здания
-	PrintInPoint(fieldWidth/2-1,fieldHeight,"╝ ╚");//двери
-	ChangeColor(COLOR_White);
+	ChangeColor(COLOR_Green);	DrawBorder(1,1,fieldWidth,fieldHeight);//рамка поля - здания
+	ChangeColor(COLOR_Green);	PrintInPoint(fieldWidth/2-1,fieldHeight,"╝ ╚");//двери
 }
 void DrawSeats()
 {//рисовать сиденья
@@ -68,22 +66,19 @@ void DrawSeats()
 	int y = 11;//у первого сиденья
 	for(int n=0;n<4;n++)
 	{//сиденья справа и слева
-		ChangeColor(COLOR_Crimson);
-		PrintInPoint(x,y+n*3,  "╔═");
-		PrintInPoint(x,y+1+n*3,"║");
-		PrintInPoint(x,y+2+n*3,"╚═");
-		PrintInPoint(x+fieldWidth-2*x,y+n*3,   "═╗");
-		PrintInPoint(x+fieldWidth-2*x+1,y+1+n*3,"║");
-		PrintInPoint(x+fieldWidth-2*x,y+2+n*3, "═╝");
-		ChangeColor(COLOR_White);
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x,y+n*3,  "╔═");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x,y+1+n*3,"║");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x,y+2+n*3,"╚═");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x,y+n*3,   "═╗");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x+1,y+1+n*3,"║");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x,y+2+n*3, "═╝");
 	}
 	for(int n=0;n<2;n++)
 	{//сиденья снизу
-		ChangeColor(COLOR_Crimson);
-		PrintInPoint(2+x+n*4,y+4*3,  "║  ║");
-		PrintInPoint(2+x+n*4,y+4*3+1,"╚══╝");
-		ChangeColor(COLOR_White);
+		ChangeColor(COLOR_Crimson); PrintInPoint(2+x+n*4,y+4*3,  "║  ║");
+		ChangeColor(COLOR_Crimson);	PrintInPoint(2+x+n*4,y+4*3+1,"╚══╝");
 	}
+	ChangeColor(COLOR_White);
 }
 void DrawWindowsState()
 {//рисовать окна
@@ -93,21 +88,18 @@ void DrawWindowsState()
 	{
 		char str[]="Okno 1";//заготовка под строку "окно"
 		str[5]=count+1+'0';//меняем цифру на нужную
-		ChangeColor(COLOR_White);
-		PrintInPoint(count*(width-1)+2, 2, str);
-		PrintInPoint(count*(width-1)+2, 3, "Talon:");
-		PrintInPoint(count*(width-1)+2, 4, "Vremya:");
-		ChangeColor(COLOR_Green);
-		DrawBorder(1+count*(width-1),1,width+count*(width-1),height);//отрисовка окна
+		ChangeColor(COLOR_White);	PrintInPoint(count*(width-1)+2, 2, str);
+		ChangeColor(COLOR_White);	PrintInPoint(count*(width-1)+2, 3, "Talon:");
+		ChangeColor(COLOR_White);	PrintInPoint(count*(width-1)+2, 4, "Vremya:");
+		ChangeColor(COLOR_Green);	DrawBorder(1+count*(width-1),1,width+count*(width-1),height);//отрисовка окна
 		if (count>0)
 		{
-			PrintInPoint(1+count*(width-1),1,"╦");//сгладить линии между окнами сверху
-			PrintInPoint(1+count*(width-1),height,"╩");//сгладить линии между окнами снизу
+			ChangeColor(COLOR_Green);	PrintInPoint(1+count*(width-1),1,"╦");//сгладить линии между окнами сверху
+			ChangeColor(COLOR_Green);	PrintInPoint(1+count*(width-1),height,"╩");//сгладить линии между окнами снизу
 		}
-		ChangeColor(COLOR_White);
 	}
-	PrintInPoint(1,height,"╠");//сгладить линии между окном и рамкой слева
-	PrintInPoint(fieldWidth,height,"╣");//сгладить линии между окном и рамкой справа
+	ChangeColor(COLOR_Green);	PrintInPoint(1,height,"╠");//сгладить линии между окном и рамкой слева
+	ChangeColor(COLOR_Green);	PrintInPoint(fieldWidth,height,"╣");//сгладить линии между окном и рамкой справа
 }
 int GetTimeForOperation(int op)
 {//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
@@ -127,7 +119,7 @@ void* ChangeWindowTime(void* arg)
 	PrintInPoint((window-1)*(width-1)+9,3,tal);//вывод талона
 	for (char t='0'; t<='0'+time; t++)//для отсчета времени - от 0 до t
 	{
-		PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
+		ChangeColor(COLOR_White);	PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
 		usleep(1000000);//секунду спит
 	}
 	PrintInPoint((window-1)*(width-1)+10,4," ");//очистка
@@ -142,24 +134,21 @@ void DrawTalonMachine()
 	int y1 = fieldHeight/2 - height/2;
 	int x2 = fieldWidth/2 + width/2;//конечные координаты
 	int y2 = fieldHeight/2 + height/2-1;
-	ChangeColor(COLOR_Green);
 	DrawBorder(x1,y1+shiftH,x2,y2+shiftH);//вывод коробки
-	PrintInPoint(x1+1,y1+1+shiftH,"Talo-");//и текста
-	PrintInPoint(x1+1,y1+2+shiftH,"ni");
-	ChangeColor(COLOR_White);
+	ChangeColor(COLOR_Green);	PrintInPoint(x1+1,y1+1+shiftH,"Talo-");//и текста
+	ChangeColor(COLOR_Green);	PrintInPoint(x1+1,y1+2+shiftH,"ni");
 }
 void DrawTable()
 {//отрисовка таблицы
 	int width = 21;//ширина таблицы
 	int stX = fieldWidth+1;//стартовая точка таблицы
-	ChangeColor(COLOR_White);
 	DrawBorder(stX,1,stX+width,4);//основа таблицы
 	DrawBorder(stX,1,stX+width,fieldHeight);//шапка
-	PrintInPoint(stX+1,2,"Posetiteli");//вывод информации в шапку
-	PrintInPoint(stX+1,3,"Imya");
-	PrintInPoint(stX+1+5,3,"Tal.");
-	PrintInPoint(stX+1+5+5,3, "Oper.");
-	PrintInPoint(stX+1+5+5+6,3, "Okno");
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1,2,"Posetiteli");//вывод информации в шапку
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1,3,"Imya");
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1+5,3,"Tal.");
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1+5+5,3, "Oper.");
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1+5+5+6,3, "Okno");
 }
 void WriteInTable(char* name, int talon, int operation, int window)
 {//писать в таблицу информацию. Требует имя, талон, операцию и окно
@@ -168,13 +157,13 @@ void WriteInTable(char* name, int talon, int operation, int window)
 	char* tal=malloc(sizeof(char)*3);//подготовка строки с талоном
 	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
 	char* op=malloc(sizeof(char)*2);//подготовка строки с операцией
-	op[0]=operation+'0';	op[1]='\0';
+	op[0]= (operation==0)?'N':'D';//если 0 - снятие наличных, если 1 - другое 
+	op[1]='\0';
 	char* win=malloc(sizeof(char)*2);//подготовка строки с окном
 	win[0]=window+'0';	win[1]='\0';
-	ChangeColor(COLOR_White);
-	PrintInPoint(stX+1+5,4+talon,tal);//вывод талона
-	PrintInPoint(stX+1+5+5,4+talon, op);//операции
-	PrintInPoint(stX+1+5+5+6,4+talon, win);//окна
+	ChangeColor(COLOR_White);	PrintInPoint(stX+1+5,4+talon,tal);//вывод талона
+	ChangeColor(COLOR_White);   PrintInPoint(stX+1+5+5,4+talon, op);//операции
+	ChangeColor(COLOR_White);   PrintInPoint(stX+1+5+5+6,4+talon, win);//окна
 }
 void ClearRow(int talon)
 {//очистка строки в таблице. Требует номер талона
@@ -184,11 +173,9 @@ void ClearRow(int talon)
 }
 void DrawField()
 {//рисовать поле
-	ChangeColor(COLOR_Green);
 	DrawFieldBorder();//границы - здание
 	DrawWindowsState();//окна
 	DrawTalonMachine();//автомат по выдаче талонов
-	ChangeColor(COLOR_White);
 	DrawSeats();//сиденья
 	DrawTable();//таблица
 }
@@ -254,7 +241,7 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 			for (int y=y1; y!=y2; y+=sign)
 			{
 				if(y!=y1)	PrintInPoint(from, y-sign, " ");//затираем предыдущую точку
-				PrintInPoint(from, y,name);//пишем в точке имя
+				ChangeColor(COLOR_White);	PrintInPoint(from, y,name);//пишем в точке имя
 				usleep(200000);//ждем немного
 			}
 			if (y1!=y2) PrintInPoint(from, y2-sign, " ");//затираем предпоследнюю точку
@@ -265,8 +252,9 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 			from = (count==0)?y1:y2;//и куда
 			for (int x = x1; x!=x2; x+=sign)
 			{
+				ChangeColor(COLOR_White);
 				if (x!=x1)	PrintInPoint(x-sign, from, " ");//затираем предыдущую точку
-				PrintInPoint(x, from,name);//пишем в точке имя
+				ChangeColor(COLOR_White);	PrintInPoint(x, from,name);//пишем в точке имя
 				usleep(200000);//ждем немного
 			}
 			if (x1!=x2)	PrintInPoint(x2-sign, from, " ");//затираем предпоследнюю точку
@@ -274,7 +262,7 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 		count++;
 		DrawField();//отрисовка поля, чтобы восстановить окружение
 	}
-	PrintInPoint(x2,y2,name);//вывод в конце концов имени
+	ChangeColor(COLOR_White);	PrintInPoint(x2,y2,name);//вывод в конце концов имени
 }
 int* CreateArray(int a, int b, int c)
 {//вспомогательная функция. Возвращает ссылку на массив. Требудет три значение int
