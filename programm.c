@@ -378,12 +378,10 @@ void MutexsSemsInit()
 	pthread_mutex_init(&mtxWinRead, NULL);//мютекс для чтения окон
 	pthread_mutex_init(&mtxWinWrite, NULL);//мютекс для записи окон
 	sem_init(&semWinRead, 1, 1);//семафор для чтения окон
-	sem_post(&semWinRead);//инициализируем семафор единицей
 
 	pthread_mutex_init(&mtxSeatRead, NULL);//мютекс для чтения сидений
 	pthread_mutex_init(&mtxSeatWrite, NULL);//мютекс для записи сидений
 	sem_init(&semSeatRead, 1, 1);//семфор для чтения сидений
-	sem_post(&semSeatRead);//инициализируем семафор единицей
 }
 void MutexsSemsDestroy()
 {
