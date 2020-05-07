@@ -16,11 +16,9 @@ int fieldHeight=25;//высота
 
 int freeWindow;//пустое окно
 pthread_mutex_t mtxWinWrite,mtxWinRead;//мютексы для записи и чтения с windows[]
-sem_t semWinRead;//семафор чтения с windows[]
 
 int freeSeat;//пустое кресло
 pthread_mutex_t mtxSeatWrite, mtxSeatRead;//мютексы для записи и чтения с seats[]
-sem_t semSeatRead;//семафор чтения с seats[]
 
 pthread_t tid[20];//нити посетителей
 void PrintInPoint(int x, int y, char* string)
@@ -275,7 +273,6 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, 
 	//режим задает, нужно ли выходить из цикла, если получили любое значение - при 0, и при 1 - выйти, если не 0
 	void (*program)() = reader;//получаем функцию
 	bool ex = false;//переменная для опеределения выхода
-	sem_wait(semRead);//ждем пока последний прочитает
 	do{
 		int rc = pthread_mutex_trylock(mtxRead);//по возможности блокируем доступ по чтению
 		if (rc == 0)
@@ -284,7 +281,6 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, 
 			program();//читаем
 			pthread_mutex_unlock(mtxWrite);//разблокируем запись
 			pthread_mutex_unlock(mtxRead);//разблокируем чтение
-			sem_post(semRead);//сообщаем, что закончили читать
 			if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
 			else ex=true;
 		}
@@ -373,35 +369,31 @@ void* visitor(void *arg)
 	usleep(200000);//перед тем как выйти еще чуть-чуть существуем в дверях
 	PrintInPoint(33,25," ");//удаляемся окончательно
 }
-void MutexsSemsInit()
+void MutexsInit()
 {//инициализация мютексов и семафоров
 	pthread_mutex_init(&mtxWinRead, NULL);//мютекс для чтения окон
 	pthread_mutex_init(&mtxWinWrite, NULL);//мютекс для записи окон
-	sem_init(&semWinRead, 1, 1);//семафор для чтения окон
-
+	
 	pthread_mutex_init(&mtxSeatRead, NULL);//мютекс для чтения сидений
 	pthread_mutex_init(&mtxSeatWrite, NULL);//мютекс для записи сидений
-	sem_init(&semSeatRead, 1, 1);//семфор для чтения сидений
 }
-void MutexsSemsDestroy()
+void MutexsDestroy()
 {
 	pthread_mutex_destroy(&mtxWinRead);
 	pthread_mutex_destroy(&mtxWinWrite);
 	pthread_mutex_destroy(&mtxSeatWrite);
 	pthread_mutex_destroy(&mtxSeatRead);
-	sem_destroy(&semWinRead);
-	sem_destroy(&semSeatRead);
 }
 void main()
 {//главная функция
 	printf("\033[H\033[2J");//очищаем окно
 	DrawField();//рисуем фон - поле
-	MutexsSemsInit();//инициализируем мютексы и семафоры
+	MutexsInit();//инициализируем мютексы и семафоры
 	for (char name='A';name<'A'+20; name++)//для имен от А до T
 	{
 		int rc=	pthread_create(&tid[name-'A'],NULL, (void*)visitor, (void*)name);//создаем поток
 		usleep(2000000);//дополнительно немного ждем
 	}
 	getchar();//ждем, пока будет нажата клавиша или ctrl+c
-	MutexsSemsDestroy();
+	MutexsDestroy();
 }
