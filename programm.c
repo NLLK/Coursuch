@@ -256,7 +256,7 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 	send[0]=a;	send[1]=b;	send[2]=c;//записываем все в массив
 	return send;//возвращаем ссылку
 }*/
-void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, int mode)
+void AbstractReader(void* mtxRead, void* mtxWrite, void* reader, int mode)
 {//абстрактный читатель. Для окон и сидений. Требует мютексы чтения, записи, семафор для чтения, функцию читатель, и режим
 	//режим задает, нужно ли выходить из цикла, если получили любое значение - при 0, и при 1 - выйти, если не 0
 	void (*program)() = reader;//получаем функцию
@@ -304,7 +304,7 @@ void* visitor(void *arg)
 	int talon = GetTalon();//получили талон
 	int window = 0;
 
-	AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &GetWindow,0);//определили свободное окно
+	AbstractReader(&mtxWinRead, &mtxWinWrite, &GetWindow,0);//определили свободное окно
 	window=freeWindow;//запомнили
 	AbstractWriter(&mtxWinWrite, &SetWindow);//записали его как занятое
 
@@ -315,7 +315,7 @@ void* visitor(void *arg)
 	int seat;//сиденье
 	if (window==0) //если окон свободных нет - сесть посидеть и ждать пока освободится окно
 	{	//определить свободное место
-		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &GetSeat,0);//прочитали свободное место
+		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &GetSeat,0);//прочитали свободное место
 		seat = freeSeat;//запомнили свободное место
 		AbstractWriter(&mtxSeatWrite, &SetSeat);//записали его как занятое
 		int x,y;//координаты сиденья
@@ -331,7 +331,7 @@ void* visitor(void *arg)
 		}
 		GoFromTo(name,hereX,hereY,x,y,0);//идем к сиденью
 		hereX=x; hereY=y;//теперь мы тут, на сиденьях
-		AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &GetWindow,1);//ждем, пока окно не освободится
+		AbstractReader(&mtxWinRead, &mtxWinWrite, &GetWindow,1);//ждем, пока окно не освободится
 		window=freeWindow;//запомнили окно
 		AbstractWriter(&mtxWinWrite,&SetWindow);//записали его как занятое
 		FreeASeat(seat);//освободить сидушку
@@ -344,8 +344,8 @@ void* visitor(void *arg)
 	GoFromTo(name,hereX,hereY,x,y,1);//идем к окну
 	hereX=x; hereY=y;//теперь мы возле окна
 
-	//запуск нити для изменения времени
-	pthread_t id;
+
+	//pthread_t id;	//запуск нити для изменения времени
 	//int *send = CreateArray(window,operation,talon);//создаем массив из окна и операции, чтобы передать это в поток
 	//pthread_create(&id, NULL, (void*)ChangeWindowTime, (void*)send);//меняем цифры времени и талона у окна
 	ChangeWindowTime(window, operation, talon);
