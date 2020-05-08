@@ -45,7 +45,6 @@ void DrawBorder(int x1, int y1, int x2, int y2)
 		ChangeColor(COLOR_Green);	PrintInPoint(x,y1,"═"); 
 		ChangeColor(COLOR_Green);	PrintInPoint(x,y2,"═");
 	}
-	
 	for(int y=y1+1; y<=y2-1;y++)//правая и левая границы
 	{
 		ChangeColor(COLOR_Green);	PrintInPoint(x1, y,"║");
@@ -71,12 +70,6 @@ void DrawSeats()
 		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x+1,y+1+n*3,"║");
 		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x,y+2+n*3, "═╝");
 	}
-	for(int n=0;n<2;n++)
-	{//сиденья снизу
-		ChangeColor(COLOR_Crimson); PrintInPoint(2+x+n*4,y+4*3,  "║  ║");
-		ChangeColor(COLOR_Crimson);	PrintInPoint(2+x+n*4,y+4*3+1,"╚══╝");
-	}
-	ChangeColor(COLOR_White);
 }
 void DrawWindowsState()
 {//рисовать окна
@@ -98,30 +91,6 @@ void DrawWindowsState()
 	}
 	ChangeColor(COLOR_Green);	PrintInPoint(1,height,"╠");//сгладить линии между окном и рамкой слева
 	ChangeColor(COLOR_Green);	PrintInPoint(fieldWidth,height,"╣");//сгладить линии между окном и рамкой справа
-}
-int GetTimeForOperation(int op)
-{//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
-	return (op==0)? 3: 5 ;
-}
-void* ChangeWindowTime(void* arg)
-{//меняет время и номер талона, когда посетитель подходит к окну
-	int* send = (int*)arg;//принятая информация
-	int window=send[0];//окно
-	int operation=send[1];//операция
-	int talon = send[2];//номер талона
-	char* tal=malloc(sizeof(char)*3);//переводим номер талона в строку
-	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
-
-	int width=2+(fieldWidth-6)/5;//ширина окна
-	int time = GetTimeForOperation(operation);//время для операции
-	PrintInPoint((window-1)*(width-1)+9,3,tal);//вывод талона
-	for (char t='0'; t<='0'+time; t++)//для отсчета времени - от 0 до t
-	{
-		ChangeColor(COLOR_White);	PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
-		usleep(1000000);//секунду спит
-	}
-	PrintInPoint((window-1)*(width-1)+10,4," ");//очистка
-	PrintInPoint((window-1)*(width-1)+9,3, "  ");
 }
 void DrawTalonMachine()
 {//рисовать автомат по выдаче талонов
@@ -176,6 +145,30 @@ void DrawField()
 	DrawTalonMachine();//автомат по выдаче талонов
 	DrawSeats();//сиденья
 	DrawTable();//таблица
+}
+int GetTimeForOperation(int op)
+{//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
+	return (op==0)? 3: 5 ;
+}
+void* ChangeWindowTime(void* arg)
+{//меняет время и номер талона, когда посетитель подходит к окну
+	int* send = (int*)arg;//принятая информация
+	int window=send[0];//окно
+	int operation=send[1];//операция
+	int talon = send[2];//номер талона
+	char* tal=malloc(sizeof(char)*3);//переводим номер талона в строку
+	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
+
+	int width=2+(fieldWidth-6)/5;//ширина окна
+	int time = GetTimeForOperation(operation);//время для операции
+	PrintInPoint((window-1)*(width-1)+9,3,tal);//вывод талона
+	for (char t='0'; t<='0'+time; t++)//для отсчета времени - от 0 до t
+	{
+		ChangeColor(COLOR_White);	PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
+		usleep(1000000);//секунду спит
+	}
+	PrintInPoint((window-1)*(width-1)+10,4," ");//очистка
+	PrintInPoint((window-1)*(width-1)+9,3, "  ");
 }
 int GetTalon()
 {//получить талон
@@ -250,7 +243,6 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 			from = (count==0)?y1:y2;//и куда
 			for (int x = x1; x!=x2; x+=sign)
 			{
-				ChangeColor(COLOR_White);
 				if (x!=x1)	PrintInPoint(x-sign, from, " ");//затираем предыдущую точку
 				ChangeColor(COLOR_White);	PrintInPoint(x, from,name);//пишем в точке имя
 				usleep(200000);//ждем немного
@@ -326,8 +318,7 @@ void* visitor(void *arg)
 
 	int seat;//сиденье
 	if (window==0) //если окон свободных нет - сесть посидеть и ждать пока освободится окно
-	{
-		//определить свободное место
+	{	//определить свободное место
 		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &GetSeat,0);//прочитали свободное место
 		seat = freeSeat;//запомнили свободное место
 		AbstractWriter(&mtxSeatWrite, &SetSeat);//записали его как занятое
@@ -337,7 +328,7 @@ void* visitor(void *arg)
 			x=3;
 			y=11+1+(seat-1)*3;
 		}
-		else if (seat<=8)
+		else 
 		{
 			x=fieldWidth-2;
 			y=11+1+(seat-5)*3;
