@@ -16,11 +16,9 @@ int fieldHeight=25;//высота
 
 int freeWindow;//пустое окно
 pthread_mutex_t mtxWinWrite,mtxWinRead;//мютексы для записи и чтения с windows[]
-sem_t semWinRead;//семафор чтения с windows[]
 
 int freeSeat;//пустое кресло
 pthread_mutex_t mtxSeatWrite, mtxSeatRead;//мютексы для записи и чтения с seats[]
-sem_t semSeatRead;//семафор чтения с seats[]
 
 pthread_t tid[20];//нити посетителей
 void PrintInPoint(int x, int y, char* string)
@@ -47,7 +45,6 @@ void DrawBorder(int x1, int y1, int x2, int y2)
 		ChangeColor(COLOR_Green);	PrintInPoint(x,y1,"═"); 
 		ChangeColor(COLOR_Green);	PrintInPoint(x,y2,"═");
 	}
-	
 	for(int y=y1+1; y<=y2-1;y++)//правая и левая границы
 	{
 		ChangeColor(COLOR_Green);	PrintInPoint(x1, y,"║");
@@ -73,12 +70,6 @@ void DrawSeats()
 		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x+1,y+1+n*3,"║");
 		ChangeColor(COLOR_Crimson);	PrintInPoint(x+fieldWidth-2*x,y+2+n*3, "═╝");
 	}
-	for(int n=0;n<2;n++)
-	{//сиденья снизу
-		ChangeColor(COLOR_Crimson); PrintInPoint(2+x+n*4,y+4*3,  "║  ║");
-		ChangeColor(COLOR_Crimson);	PrintInPoint(2+x+n*4,y+4*3+1,"╚══╝");
-	}
-	ChangeColor(COLOR_White);
 }
 void DrawWindowsState()
 {//рисовать окна
@@ -100,30 +91,6 @@ void DrawWindowsState()
 	}
 	ChangeColor(COLOR_Green);	PrintInPoint(1,height,"╠");//сгладить линии между окном и рамкой слева
 	ChangeColor(COLOR_Green);	PrintInPoint(fieldWidth,height,"╣");//сгладить линии между окном и рамкой справа
-}
-int GetTimeForOperation(int op)
-{//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
-	return (op==0)? 3: 5 ;
-}
-void* ChangeWindowTime(void* arg)
-{//меняет время и номер талона, когда посетитель подходит к окну
-	int* send = (int*)arg;//принятая информация
-	int window=send[0];//окно
-	int operation=send[1];//операция
-	int talon = send[2];//номер талона
-	char* tal=malloc(sizeof(char)*3);//переводим номер талона в строку
-	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
-
-	int width=2+(fieldWidth-6)/5;//ширина окна
-	int time = GetTimeForOperation(operation);//время для операции
-	PrintInPoint((window-1)*(width-1)+9,3,tal);//вывод талона
-	for (char t='0'; t<='0'+time; t++)//для отсчета времени - от 0 до t
-	{
-		ChangeColor(COLOR_White);	PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
-		usleep(1000000);//секунду спит
-	}
-	PrintInPoint((window-1)*(width-1)+10,4," ");//очистка
-	PrintInPoint((window-1)*(width-1)+9,3, "  ");
 }
 void DrawTalonMachine()
 {//рисовать автомат по выдаче талонов
@@ -178,6 +145,26 @@ void DrawField()
 	DrawTalonMachine();//автомат по выдаче талонов
 	DrawSeats();//сиденья
 	DrawTable();//таблица
+}
+int GetTimeForOperation(int op)
+{//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
+	return (op==0)? 3: 5 ;
+}
+void ChangeWindowTime(int window, int operation, int talon)
+{//меняет время и номер талона, когда посетитель подходит к окну
+	char* tal=malloc(sizeof(char)*3);//переводим номер талона в строку
+	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
+
+	int width=2+(fieldWidth-6)/5;//ширина окна
+	int time = GetTimeForOperation(operation);//время для операции
+	PrintInPoint((window-1)*(width-1)+9,3,tal);//вывод талона
+	for (char t='0'; t<='0'+time; t++)//для отсчета времени - от 0 до t
+	{
+		ChangeColor(COLOR_White);	PrintInPoint((window-1)*(width-1)+10,4,&t);//вывод секунды
+		usleep(1000000);//секунду спит
+	}
+	PrintInPoint((window-1)*(width-1)+10,4," ");//очистка
+	PrintInPoint((window-1)*(width-1)+9,3, "  ");
 }
 int GetTalon()
 {//получить талон
@@ -252,7 +239,6 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 			from = (count==0)?y1:y2;//и куда
 			for (int x = x1; x!=x2; x+=sign)
 			{
-				ChangeColor(COLOR_White);
 				if (x!=x1)	PrintInPoint(x-sign, from, " ");//затираем предыдущую точку
 				ChangeColor(COLOR_White);	PrintInPoint(x, from,name);//пишем в точке имя
 				usleep(200000);//ждем немного
@@ -264,18 +250,12 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 	}
 	ChangeColor(COLOR_White);	PrintInPoint(x2,y2,name);//вывод в конце концов имени
 }
-int* CreateArray(int a, int b, int c)
-{//вспомогательная функция. Возвращает ссылку на массив. Требудет три значение int
-	int *send = malloc(sizeof(int)*3);//выделяем память
-	send[0]=a;	send[1]=b;	send[2]=c;//записываем все в массив
-	return send;//возвращаем ссылку
-}
-void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, int mode)
+void AbstractReader(void* mtxRead, void* mtxWrite, void* reader, int mode)
 {//абстрактный читатель. Для окон и сидений. Требует мютексы чтения, записи, семафор для чтения, функцию читатель, и режим
 	//режим задает, нужно ли выходить из цикла, если получили любое значение - при 0, и при 1 - выйти, если не 0
 	void (*program)() = reader;//получаем функцию
 	bool ex = false;//переменная для опеределения выхода
-	//sem_wait(semRead);//ждем пока последний прочитает
+
 	do{
 		int rc = pthread_mutex_trylock(mtxRead);//по возможности блокируем доступ по чтению
 		if (rc == 0)
@@ -284,7 +264,6 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, 
 			program();//читаем
 			pthread_mutex_unlock(mtxWrite);//разблокируем запись
 			pthread_mutex_unlock(mtxRead);//разблокируем чтение
-			//sem_post(semRead);//сообщаем, что закончили читать
 			if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
 			else ex=true;
 		}
@@ -320,7 +299,7 @@ void* visitor(void *arg)
 	int talon = GetTalon();//получили талон
 	int window = 0;
 
-	AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &GetWindow,0);//определили свободное окно
+	AbstractReader(&mtxWinRead, &mtxWinWrite, &GetWindow,0);//определили свободное окно
 	window=freeWindow;//запомнили
 	AbstractWriter(&mtxWinWrite, &SetWindow);//записали его как занятое
 
@@ -330,9 +309,8 @@ void* visitor(void *arg)
 
 	int seat;//сиденье
 	if (window==0) //если окон свободных нет - сесть посидеть и ждать пока освободится окно
-	{
-		//определить свободное место
-		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &semSeatRead, &GetSeat,0);//прочитали свободное место
+	{	//определить свободное место
+		AbstractReader(&mtxSeatRead, &mtxSeatWrite, &GetSeat,0);//прочитали свободное место
 		seat = freeSeat;//запомнили свободное место
 		AbstractWriter(&mtxSeatWrite, &SetSeat);//записали его как занятое
 		int x,y;//координаты сиденья
@@ -341,14 +319,14 @@ void* visitor(void *arg)
 			x=3;
 			y=11+1+(seat-1)*3;
 		}
-		else if (seat<=8)
+		else 
 		{
 			x=fieldWidth-2;
 			y=11+1+(seat-5)*3;
 		}
 		GoFromTo(name,hereX,hereY,x,y,0);//идем к сиденью
 		hereX=x; hereY=y;//теперь мы тут, на сиденьях
-		AbstractReader(&mtxWinRead, &mtxWinWrite, &semWinRead, &GetWindow,1);//ждем, пока окно не освободится
+		AbstractReader(&mtxWinRead, &mtxWinWrite, &GetWindow,1);//ждем, пока окно не освободится
 		window=freeWindow;//запомнили окно
 		AbstractWriter(&mtxWinWrite,&SetWindow);//записали его как занятое
 		FreeASeat(seat);//освободить сидушку
@@ -361,11 +339,7 @@ void* visitor(void *arg)
 	GoFromTo(name,hereX,hereY,x,y,1);//идем к окну
 	hereX=x; hereY=y;//теперь мы возле окна
 
-	//запуск нити для изменения времени
-	pthread_t id;
-	int *send = CreateArray(window,operation,talon);//создаем массив из окна и операции, чтобы передать это в поток
-	pthread_create(&id, NULL, (void*)ChangeWindowTime, (void*)send);//меняем цифры времени и талона у окна
-	usleep(GetTimeForOperation(operation)*1000000);//спим столько же, сколько и меняется время в окне
+	ChangeWindowTime(window, operation, talon);
 	FreeAWindow(window);//освобождаем окно
 	ClearRow(talon);//удаляем себя из таблицы
 	GoFromTo(name,hereX,hereY,33,20,0);//идем на выход, до автомата(почти)
@@ -373,35 +347,31 @@ void* visitor(void *arg)
 	usleep(200000);//перед тем как выйти еще чуть-чуть существуем в дверях
 	PrintInPoint(33,25," ");//удаляемся окончательно
 }
-void MutexsSemsInit()
+void MutexsInit()
 {//инициализация мютексов и семафоров
 	pthread_mutex_init(&mtxWinRead, NULL);//мютекс для чтения окон
 	pthread_mutex_init(&mtxWinWrite, NULL);//мютекс для записи окон
-	sem_init(&semWinRead, 1, 1);//семафор для чтения окон
-
+	
 	pthread_mutex_init(&mtxSeatRead, NULL);//мютекс для чтения сидений
 	pthread_mutex_init(&mtxSeatWrite, NULL);//мютекс для записи сидений
-	sem_init(&semSeatRead, 1, 1);//семфор для чтения сидений
 }
-void MutexsSemsDestroy()
+void MutexsDestroy()
 {
 	pthread_mutex_destroy(&mtxWinRead);
 	pthread_mutex_destroy(&mtxWinWrite);
 	pthread_mutex_destroy(&mtxSeatWrite);
 	pthread_mutex_destroy(&mtxSeatRead);
-	sem_destroy(&semWinRead);
-	sem_destroy(&semSeatRead);
 }
 void main()
 {//главная функция
 	printf("\033[H\033[2J");//очищаем окно
 	DrawField();//рисуем фон - поле
-	MutexsSemsInit();//инициализируем мютексы и семафоры
+	MutexsInit();//инициализируем мютексы и семафоры
 	for (char name='A';name<'A'+20; name++)//для имен от А до T
 	{
 		int rc=	pthread_create(&tid[name-'A'],NULL, (void*)visitor, (void*)name);//создаем поток
 		usleep(2000000);//дополнительно немного ждем
 	}
 	getchar();//ждем, пока будет нажата клавиша или ctrl+c
-	MutexsSemsDestroy();
+	MutexsDestroy();
 }
