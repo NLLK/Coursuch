@@ -275,7 +275,7 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, 
 	//режим задает, нужно ли выходить из цикла, если получили любое значение - при 0, и при 1 - выйти, если не 0
 	void (*program)() = reader;//получаем функцию
 	bool ex = false;//переменная для опеределения выхода
-	sem_wait(semRead);//ждем пока последний прочитает
+	//sem_wait(semRead);//ждем пока последний прочитает
 	do{
 		int rc = pthread_mutex_trylock(mtxRead);//по возможности блокируем доступ по чтению
 		if (rc == 0)
@@ -284,7 +284,7 @@ void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, 
 			program();//читаем
 			pthread_mutex_unlock(mtxWrite);//разблокируем запись
 			pthread_mutex_unlock(mtxRead);//разблокируем чтение
-			sem_post(semRead);//сообщаем, что закончили читать
+			//sem_post(semRead);//сообщаем, что закончили читать
 			if ((mode == 1) && (freeWindow == 0)) ex=false;//на случай, если нужно ждать не нулевого значения 
 			else ex=true;
 		}
