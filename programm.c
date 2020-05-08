@@ -150,12 +150,8 @@ int GetTimeForOperation(int op)
 {//возвращает время для операции - 3 секунды для снятия наличных и 5 для других операций
 	return (op==0)? 3: 5 ;
 }
-void* ChangeWindowTime(void* arg)
+void ChangeWindowTime(int window, int operation, int talon)
 {//меняет время и номер талона, когда посетитель подходит к окну
-	int* send = (int*)arg;//принятая информация
-	int window=send[0];//окно
-	int operation=send[1];//операция
-	int talon = send[2];//номер талона
 	char* tal=malloc(sizeof(char)*3);//переводим номер талона в строку
 	tal[0]=talon/10+'0'; tal[1]=talon%10+'0';tal[2]='\0';
 
@@ -254,12 +250,12 @@ void GoFromTo(char* name, int x1, int y1, int x2, int y2, int how)
 	}
 	ChangeColor(COLOR_White);	PrintInPoint(x2,y2,name);//вывод в конце концов имени
 }
-int* CreateArray(int a, int b, int c)
+/*int* CreateArray(int a, int b, int c)
 {//вспомогательная функция. Возвращает ссылку на массив. Требудет три значение int
 	int *send = malloc(sizeof(int)*3);//выделяем память
 	send[0]=a;	send[1]=b;	send[2]=c;//записываем все в массив
 	return send;//возвращаем ссылку
-}
+}*/
 void AbstractReader(void* mtxRead, void* mtxWrite, void* semRead, void* reader, int mode)
 {//абстрактный читатель. Для окон и сидений. Требует мютексы чтения, записи, семафор для чтения, функцию читатель, и режим
 	//режим задает, нужно ли выходить из цикла, если получили любое значение - при 0, и при 1 - выйти, если не 0
@@ -350,9 +346,10 @@ void* visitor(void *arg)
 
 	//запуск нити для изменения времени
 	pthread_t id;
-	int *send = CreateArray(window,operation,talon);//создаем массив из окна и операции, чтобы передать это в поток
-	pthread_create(&id, NULL, (void*)ChangeWindowTime, (void*)send);//меняем цифры времени и талона у окна
-	usleep(GetTimeForOperation(operation)*1000000);//спим столько же, сколько и меняется время в окне
+	//int *send = CreateArray(window,operation,talon);//создаем массив из окна и операции, чтобы передать это в поток
+	//pthread_create(&id, NULL, (void*)ChangeWindowTime, (void*)send);//меняем цифры времени и талона у окна
+	ChangeWindowTime(window, operation, talon);
+	//usleep(GetTimeForOperation(operation)*1000000);//спим столько же, сколько и меняется время в окне
 	FreeAWindow(window);//освобождаем окно
 	ClearRow(talon);//удаляем себя из таблицы
 	GoFromTo(name,hereX,hereY,33,20,0);//идем на выход, до автомата(почти)
